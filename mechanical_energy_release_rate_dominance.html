@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K-Dominance: Why K Controls the Crack Tip</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f13;
+    --bg2: #16161c;
+    --bg3: #1e1e28;
+    --border: rgba(255,255,255,0.08);
+    --text: #e8e6f0;
+    --muted: #8a8898;
+    --amber: #f0a050;
+    --amber-dim: rgba(240,160,80,0.12);
+    --blue: #5ba8f5;
+    --blue-dim: rgba(91,168,245,0.12);
+    --red: #e85858;
+    --red-dim: rgba(232,88,88,0.12);
+    --green: #52c98a;
+    --green-dim: rgba(82,201,138,0.12);
+    --purple: #a88cf0;
+    --purple-dim: rgba(168,140,240,0.12);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    padding: 0;
+  }
+
+  .hero {
+    background: linear-gradient(135deg, #0f0f13 0%, #1a1428 50%, #0f1318 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 40px 48px;
+    text-align: center;
+  }
+
+  .hero-label {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+
+  h1 {
+    font-size: 36px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.5px;
+    margin-bottom: 12px;
+  }
+
+  .hero p {
+    color: var(--muted);
+    max-width: 560px;
+    margin: 0 auto;
+    font-size: 15px;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 40px;
+  }
+
+  .section {
+    margin-bottom: 56px;
+  }
+
+  h2 {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 20px;
+  }
+
+  h3 {
+    font-size: 18px;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 10px;
+    letter-spacing: -0.2px;
+  }
+
+  p { color: var(--muted); margin-bottom: 12px; }
+
+  /* ── Zone diagram ── */
+  .zone-wrap {
+    display: flex;
+    align-items: stretch;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    margin: 28px 0;
+    min-height: 180px;
+  }
+
+  .zone {
+    flex: 1;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .zone:not(:last-child) { border-right: 1px solid var(--border); }
+
+  .zone.red-zone { background: var(--red-dim); }
+  .zone.amber-zone { background: var(--amber-dim); }
+  .zone.blue-zone { background: var(--blue-dim); }
+
+  .zone.red-zone:hover { background: rgba(232,88,88,0.2); }
+  .zone.amber-zone:hover { background: rgba(240,160,80,0.22); }
+  .zone.blue-zone:hover { background: rgba(91,168,245,0.2); }
+
+  .zone-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .zone.red-zone .zone-label { color: var(--red); }
+  .zone.amber-zone .zone-label { color: var(--amber); }
+  .zone.blue-zone .zone-label { color: var(--blue); }
+
+  .zone-title { font-size: 15px; font-weight: 500; color: #fff; margin-bottom: 6px; }
+  .zone-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  .zone-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+    margin-top: 10px;
+    letter-spacing: 0.05em;
+  }
+  .zone.red-zone .zone-tag { background: rgba(232,88,88,0.2); color: var(--red); }
+  .zone.amber-zone .zone-tag { background: rgba(240,160,80,0.2); color: var(--amber); }
+  .zone.blue-zone .zone-tag { background: rgba(91,168,245,0.2); color: var(--blue); }
+
+  /* ── Info panel ── */
+  .info-panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 0 0 28px;
+    min-height: 80px;
+    transition: all 0.3s ease;
+  }
+
+  .info-panel .ip-title { font-size: 14px; font-weight: 500; color: #fff; margin-bottom: 6px; }
+  .info-panel .ip-body { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* ── Funnel diagram ── */
+  .funnel-wrap {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+    margin: 28px 0;
+  }
+
+  .funnel-svg { flex-shrink: 0; }
+
+  .funnel-labels { flex: 1; }
+
+  .funnel-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .funnel-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+
+  .funnel-item-title { font-size: 14px; font-weight: 500; color: #fff; }
+  .funnel-item-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* ── Similitude cards ── */
+  .sim-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 28px 0;
+  }
+
+  .sim-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sim-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .sim-card.card-a::before { background: var(--blue); }
+  .sim-card.card-b::before { background: var(--purple); }
+
+  .sim-card-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .card-a .sim-card-label { color: var(--blue); }
+  .card-b .sim-card-label { color: var(--purple); }
+
+  .sim-card h4 { font-size: 14px; font-weight: 500; color: #fff; margin-bottom: 6px; }
+  .sim-card p { font-size: 12px; color: var(--muted); line-height: 1.5; margin: 0; }
+
+  .sim-equal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 12px 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .sim-equal .eq-badge {
+    background: var(--green-dim);
+    border: 1px solid rgba(82,201,138,0.3);
+    color: var(--green);
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* ── Formula box ── */
+  .formula {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--amber);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text);
+    margin: 20px 0;
+    line-height: 1.8;
+  }
+
+  .formula .kw { color: var(--amber); }
+  .formula .val { color: var(--blue); }
+  .formula .comment { color: var(--muted); font-size: 12px; }
+
+  /* ── Key insight ── */
+  .insight {
+    background: linear-gradient(135deg, rgba(240,160,80,0.08), rgba(240,160,80,0.03));
+    border: 1px solid rgba(240,160,80,0.25);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 28px 0;
+  }
+
+  .insight-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--amber);
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  .insight p { color: var(--text); margin: 0; font-size: 14px; line-height: 1.6; }
+
+  /* ── Interactive slider ── */
+  .slider-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin: 28px 0;
+  }
+
+  .slider-title { font-size: 14px; font-weight: 500; color: #fff; margin-bottom: 6px; }
+  .slider-desc { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .slider-row label { font-size: 12px; color: var(--muted); min-width: 36px; }
+
+  input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    background: rgba(255,255,255,0.08);
+    height: 4px;
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--amber);
+    cursor: pointer;
+  }
+
+  .slider-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--amber);
+    min-width: 48px;
+    text-align: right;
+  }
+
+  .viz-canvas {
+    width: 100%;
+    height: 200px;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg3);
+  }
+
+  /* ── Divider ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 48px 0;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    padding: 32px 40px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 600px) {
+    .zone-wrap { flex-direction: column; }
+    .zone:not(:last-child) { border-right: none; border-bottom: 1px solid var(--border); }
+    .sim-grid { grid-template-columns: 1fr; }
+    .funnel-wrap { flex-direction: column; }
+    h1 { font-size: 26px; }
+    .container { padding: 32px 20px; }
+    .hero { padding: 40px 20px 36px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-label">Fracture Mechanics — Chapter 2</div>
+  <h1>Why K controls the crack tip</h1>
+  <p>An interactive visual guide to K-dominance: how a single number controls everything happening at a crack tip, even when the formula breaks down there.</p>
+</div>
+
+<div class="container">
+
+  <!-- Section 1: The three zones -->
+  <div class="section">
+    <h2>01 — Three zones around every crack tip</h2>
+    <h3>Not all distances from the tip are equal</h3>
+    <p>The Irwin formula σ = K / √(2πr) looks like it should work everywhere. But it only holds in an intermediate annular band. Click each zone to learn why.</p>
+
+    <div class="zone-wrap">
+      <div class="zone red-zone" onclick="showInfo('nonlinear')">
+        <div class="zone-label">r &lt; r<sub>min</sub></div>
+        <div class="zone-title">Nonlinear zone</div>
+        <div class="zone-desc">Atomic bonds breaking, plasticity, nonlinear elasticity. Formula predicts infinite stress — physically impossible.</div>
+        <span class="zone-tag">Formula invalid</span>
+      </div>
+      <div class="zone amber-zone" onclick="showInfo('kzone')">
+        <div class="zone-label">r<sub>min</sub> &lt; r &lt; r<sub>max</sub></div>
+        <div class="zone-title">K-dominated zone ★</div>
+        <div class="zone-desc">The sweet spot. Linear elasticity holds. The r<sup>−½</sup> field is accurate. K fully describes everything here.</div>
+        <span class="zone-tag">Formula valid</span>
+      </div>
+      <div class="zone blue-zone" onclick="showInfo('outer')">
+        <div class="zone-label">r &gt; r<sub>max</sub></div>
+        <div class="zone-title">Outer boundary zone</div>
+        <div class="zone-desc">Higher-order terms in the series expansion dominate. Specimen geometry and boundary conditions matter here.</div>
+        <span class="zone-tag">Formula invalid</span>
+      </div>
+    </div>
+
+    <div class="info-panel" id="info-panel">
+      <div class="ip-title">Click a zone above to explore it</div>
+      <div class="ip-body">Each zone represents a different physical regime around the crack tip. Understanding why the formula fails at the extremes reveals why K is so powerful in between.</div>
+    </div>
+  </div>
+
+  <!-- Section 2: The funnel idea -->
+  <div class="section">
+    <h2>02 — K as a funnel</h2>
+    <h3>All information passes through K before reaching the tip</h3>
+    <p>The nonlinear zone has no direct access to the outside world. Everything — applied load, specimen shape, crack size — must pass through the K-dominated zone first. K is the only messenger.</p>
+
+    <div class="funnel-wrap">
+      <svg class="funnel-svg" width="200" height="320" viewBox="0 0 200 320">
+        <defs>
+          <linearGradient id="funnel-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#5ba8f5" stop-opacity="0.6"/>
+            <stop offset="60%" stop-color="#f0a050" stop-opacity="0.8"/>
+            <stop offset="100%" stop-color="#e85858" stop-opacity="0.9"/>
+          </linearGradient>
+        </defs>
+
+        <!-- inputs at top -->
+        <rect x="10" y="10" width="80" height="28" rx="6" fill="rgba(91,168,245,0.15)" stroke="rgba(91,168,245,0.4)" stroke-width="1"/>
+        <text x="50" y="29" text-anchor="middle" fill="#5ba8f5" font-size="11" font-family="Inter">Crack size c</text>
+
+        <rect x="110" y="10" width="80" height="28" rx="6" fill="rgba(91,168,245,0.15)" stroke="rgba(91,168,245,0.4)" stroke-width="1"/>
+        <text x="150" y="29" text-anchor="middle" fill="#5ba8f5" font-size="11" font-family="Inter">Applied load</text>
+
+        <rect x="10" y="50" width="80" height="28" rx="6" fill="rgba(91,168,245,0.15)" stroke="rgba(91,168,245,0.4)" stroke-width="1"/>
+        <text x="50" y="69" text-anchor="middle" fill="#5ba8f5" font-size="11" font-family="Inter">Geometry ψ</text>
+
+        <rect x="110" y="50" width="80" height="28" rx="6" fill="rgba(91,168,245,0.15)" stroke="rgba(91,168,245,0.4)" stroke-width="1"/>
+        <text x="150" y="69" text-anchor="middle" fill="#5ba8f5" font-size="11" font-family="Inter">Specimen shape</text>
+
+        <!-- funnel body -->
+        <path d="M20,90 L180,90 L130,170 L100,200 L70,170 Z" fill="url(#funnel-grad)" opacity="0.25" stroke="rgba(240,160,80,0.5)" stroke-width="1" fill-rule="evenodd"/>
+        <path d="M20,90 L180,90 L130,170 L100,200 L70,170 Z" fill="none" stroke="rgba(240,160,80,0.4)" stroke-width="1"/>
+
+        <!-- K label inside funnel -->
+        <text x="100" y="148" text-anchor="middle" fill="#f0a050" font-size="22" font-weight="600" font-family="Inter">K</text>
+        <text x="100" y="166" text-anchor="middle" fill="rgba(240,160,80,0.6)" font-size="10" font-family="Inter">single number</text>
+
+        <!-- spout -->
+        <rect x="88" y="200" width="24" height="50" rx="4" fill="rgba(240,160,80,0.2)" stroke="rgba(240,160,80,0.5)" stroke-width="1"/>
+
+        <!-- nonlinear zone at bottom -->
+        <circle cx="100" cy="286" r="26" fill="rgba(232,88,88,0.15)" stroke="rgba(232,88,88,0.5)" stroke-width="1"/>
+        <text x="100" y="282" text-anchor="middle" fill="#e85858" font-size="9" font-family="Inter">Nonlinear</text>
+        <text x="100" y="294" text-anchor="middle" fill="#e85858" font-size="9" font-family="Inter">zone</text>
+      </svg>
+
+      <div class="funnel-labels">
+        <div class="funnel-item">
+          <div class="funnel-dot" style="background:var(--blue)"></div>
+          <div>
+            <div class="funnel-item-title">Inputs (many)</div>
+            <div class="funnel-item-desc">Crack size, applied stress, specimen shape, boundary conditions — all different for every problem.</div>
+          </div>
+        </div>
+        <div class="funnel-item">
+          <div class="funnel-dot" style="background:var(--amber)"></div>
+          <div>
+            <div class="funnel-item-title">K condenses everything</div>
+            <div class="funnel-item-desc">Via K = ψ σ<sub>A</sub> c<sup>½</sup>, all inputs are compressed into one number. The complexity disappears.</div>
+          </div>
+        </div>
+        <div class="funnel-item">
+          <div class="funnel-dot" style="background:var(--red)"></div>
+          <div>
+            <div class="funnel-item-title">Nonlinear zone only sees K</div>
+            <div class="funnel-item-desc">The zone where fracture actually happens receives only K — never the raw inputs. So it responds identically whenever K is the same.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: Similitude -->
+  <div class="section">
+    <h2>03 — Similitude principle</h2>
+    <h3>Same K = same crack tip conditions, always</h3>
+    <p>This is the most powerful consequence. Two completely different specimens — different sizes, shapes, loading — present identical conditions to the nonlinear zone if their K values match.</p>
+
+    <div class="sim-grid">
+      <div class="sim-card card-a">
+        <div class="sim-card-label">Specimen A</div>
+        <h4>Lab beam, c = 2 mm</h4>
+        <p>Small four-point bend specimen. K<sub>I</sub> = 1.2 MPa√m. Compact geometry, controlled lab conditions.</p>
+      </div>
+      <div class="sim-card card-b">
+        <div class="sim-card-label">Specimen B</div>
+        <h4>Bridge girder, c = 40 mm</h4>
+        <p>Massive structural element. Different crack size, different load, different geometry. But K<sub>I</sub> = 1.2 MPa√m.</p>
+      </div>
+    </div>
+
+    <div class="sim-equal">
+      <span>Both present identical stress fields to the nonlinear zone</span>
+      <span class="eq-badge">K<sub>A</sub> = K<sub>B</sub> → same fracture behaviour</span>
+    </div>
+
+    <div class="insight">
+      <div class="insight-label">Key insight</div>
+      <p>This is why you can measure K<sub>c</sub> in a small lab specimen and use it to predict failure in a massive real-world structure. The nonlinear zone never sees the difference — it only sees K.</p>
+    </div>
+  </div>
+
+  <!-- Section 4: Formula -->
+  <div class="section">
+    <h2>04 — The stress field equation</h2>
+    <h3>What "K controls" means mathematically</h3>
+    <p>At any point in the K-dominated zone, the stress is completely determined by K alone:</p>
+
+    <div class="formula">
+      <span class="comment">// Stress at distance r, angle θ from crack tip</span><br>
+      σ<sub>ij</sub>(r, θ) = <span class="kw">K</span> / √(2πr) × f<sub>ij</sub>(θ)<br><br>
+      <span class="comment">// K sets the intensity — same for all geometries</span><br>
+      <span class="comment">// f_ij(θ) is universal — same for all Mode I cracks</span><br><br>
+      <span class="comment">// At the nonlinear zone boundary r = r_min:</span><br>
+      σ<sub>boundary</sub> = <span class="kw">K</span> / √(2π·r<sub>min</sub>) × f<sub>ij</sub>(θ)<br>
+      <span class="comment">// → only K determines what the nonlinear zone experiences</span>
+    </div>
+  </div>
+
+  <!-- Section 5: Interactive — feel the K field -->
+  <div class="section">
+    <h2>05 — Interactive: feel the K-dominated field</h2>
+    <h3>See how the stress field changes with K and distance</h3>
+
+    <div class="slider-section">
+      <div class="slider-title">Stress field visualiser</div>
+      <div class="slider-desc">Adjust K and watch the stress intensity map around the crack tip. Notice how the shape (f<sub>ij</sub>(θ)) never changes — only the magnitude does.</div>
+
+      <div class="slider-row">
+        <label>K</label>
+        <input type="range" id="k-slider" min="1" max="5" value="2" step="0.1" oninput="drawField()">
+        <span class="slider-val" id="k-val">2.0</span>
+      </div>
+
+      <div class="viz-canvas" id="canvas-wrap">
+        <canvas id="field-canvas" style="display:block;width:100%;height:100%"></canvas>
+      </div>
+
+      <div style="display:flex;gap:24px;margin-top:12px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)">
+          <div style="width:12px;height:12px;border-radius:2px;background:#e85858"></div> High stress
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)">
+          <div style="width:12px;height:12px;border-radius:2px;background:#f0a050"></div> Medium stress
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)">
+          <div style="width:12px;height:12px;border-radius:2px;background:#1e1e28"></div> Low stress
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)">
+          <div style="width:12px;height:12px;border-radius:2px;background:rgba(232,88,88,0.3);border:1px solid #e85858"></div> Nonlinear zone (formula invalid)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 6: Small scale yielding -->
+  <div class="section">
+    <h2>06 — The critical requirement</h2>
+    <h3>Small-scale yielding condition</h3>
+    <p>K-dominance only works if the nonlinear zone is <em>much smaller</em> than the K-dominated zone. This is the <strong>small-scale yielding</strong> condition you will meet in Chapter 3:</p>
+
+    <div style="display:flex;align-items:stretch;gap:16px;margin:28px 0;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px;background:var(--green-dim);border:1px solid rgba(82,201,138,0.3);border-radius:12px;padding:20px">
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--green);font-weight:500;margin-bottom:8px">Condition met ✓</div>
+        <div style="font-size:14px;font-weight:500;color:#fff;margin-bottom:6px">r<sub>nonlinear</sub> ≪ r<sub>K-zone</sub></div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5">Nonlinear zone is tiny. K fully controls the boundary. K<sub>c</sub> is a valid material property. Fracture mechanics works.</div>
+      </div>
+      <div style="flex:1;min-width:200px;background:var(--red-dim);border:1px solid rgba(232,88,88,0.3);border-radius:12px;padding:20px">
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);font-weight:500;margin-bottom:8px">Condition violated ✗</div>
+        <div style="font-size:14px;font-weight:500;color:#fff;margin-bottom:6px">r<sub>nonlinear</sub> ~ r<sub>K-zone</sub></div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5">Nonlinear zone is large. K-dominated annulus is too thin. The framework breaks down — need elastic-plastic fracture mechanics (Chapter 3).</div>
+      </div>
+    </div>
+
+    <div class="insight">
+      <div class="insight-label">Chapter 2 assumption</div>
+      <p>Everything in Chapter 2 assumes small-scale yielding holds. For brittle solids (ceramics, glass), the nonlinear zone is sub-nanometre — the condition is satisfied extremely well. That is why the linear elastic framework works so beautifully for brittle fracture.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Based on Lawn, <em>Fracture of Brittle Solids</em>, 2nd Ed. — Chapter 2 Lecture Notes
+</div>
+
+<script>
+const infos = {
+  nonlinear: {
+    title: 'Nonlinear zone — where real fracture happens',
+    body: 'Right at the crack tip, stress is so high that linear elasticity breaks down completely. Atomic bonds are actually breaking, real plasticity may occur even in brittle materials, and the perfectly sharp slit model fails. The formula predicts infinite stress here — which is obviously unphysical. The actual fracture process (bond rupture, atomic separation) happens here, but is driven by K from outside.'
+  },
+  kzone: {
+    title: 'K-dominated zone — the heart of fracture mechanics',
+    body: 'In this annular region, the Irwin formula is accurate. The r⁻¹ˡ² singularity dominates over all higher-order terms, and the angular functions f_ij(θ) correctly describe the stress field shape. K completely characterises this zone. The critical insight: the nonlinear zone at the centre is entirely surrounded by this K-controlled field, so K sets the boundary conditions for whatever happens inside.'
+  },
+  outer: {
+    title: 'Outer zone — where geometry matters',
+    body: 'Far from the tip, the stress field is dominated by higher-order terms in the series expansion (r^(5/2), r^(7/2), ...) rather than the singular r^(-1/2) term. The specific geometry of the specimen — its boundaries, the loading configuration, the finite size — all become important here. The simple K formula, derived from the local tip solution, cannot capture these effects and loses accuracy.'
+  }
+};
+
+function showInfo(key) {
+  const d = infos[key];
+  document.getElementById('info-panel').innerHTML =
+    `<div class="ip-title">${d.title}</div><div class="ip-body">${d.body}</div>`;
+}
+
+// Canvas field visualiser
+function drawField() {
+  const slider = document.getElementById('k-slider');
+  const K = parseFloat(slider.value);
+  document.getElementById('k-val').textContent = K.toFixed(1);
+
+  const wrap = document.getElementById('canvas-wrap');
+  const canvas = document.getElementById('field-canvas');
+  const W = wrap.clientWidth;
+  const H = wrap.clientHeight;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  const cx = W * 0.35;
+  const cy = H * 0.5;
+  const scale = Math.min(W, H) * 0.38;
+  const rMin = 0.08;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#1e1e28';
+  ctx.fillRect(0, 0, W, H);
+
+  const imgData = ctx.createImageData(W, H);
+  const data = imgData.data;
+
+  for (let px = 0; px < W; px++) {
+    for (let py = 0; py < H; py++) {
+      const dx = (px - cx) / scale;
+      const dy = (py - cy) / scale;
+      const r = Math.sqrt(dx*dx + dy*dy);
+      const theta = Math.atan2(dy, dx);
+
+      let stress = 0;
+      const idx = (py * W + px) * 4;
+
+      if (dx < 0 && Math.abs(dy) < 0.03) {
+        // crack line behind tip
+        data[idx] = 30; data[idx+1] = 30; data[idx+2] = 40; data[idx+3] = 255;
+        continue;
+      }
+
+      if (r < rMin) {
+        // nonlinear zone
+        data[idx] = 232; data[idx+1] = 88; data[idx+2] = 88; data[idx+3] = 60;
+        continue;
+      }
+
+      // Mode I stress (sigma_yy component)
+      const t2 = theta / 2;
+      const ftheta = Math.cos(t2) * (1 + Math.sin(t2) * Math.sin(3*t2/2));
+      stress = K * Math.abs(ftheta) / Math.sqrt(2 * Math.PI * r);
+
+      const norm = Math.min(stress / (K * 2.5), 1.0);
+
+      // colour ramp: dark → amber → red
+      let rr, gg, bb;
+      if (norm < 0.5) {
+        const t = norm / 0.5;
+        rr = Math.round(30 + t * (240 - 30));
+        gg = Math.round(30 + t * (160 - 30));
+        bb = Math.round(40 + t * (80 - 40));
+      } else {
+        const t = (norm - 0.5) / 0.5;
+        rr = Math.round(240 + t * (232 - 240));
+        gg = Math.round(160 - t * 160);
+        bb = Math.round(80 - t * 80);
+      }
+
+      data[idx] = rr; data[idx+1] = gg; data[idx+2] = bb; data[idx+3] = 255;
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+
+  // Draw crack line
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(0, cy);
+  ctx.lineTo(cx, cy);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw zone boundary circle
+  ctx.strokeStyle = 'rgba(232,88,88,0.7)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(cx, cy, rMin * scale, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Tip dot
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Labels
+  ctx.fillStyle = 'rgba(232,88,88,0.9)';
+  ctx.font = '11px Inter';
+  ctx.fillText('Nonlinear', cx + rMin*scale + 4, cy - 6);
+
+  ctx.fillStyle = 'rgba(240,160,80,0.8)';
+  ctx.font = '11px Inter';
+  ctx.fillText('K = ' + K.toFixed(1) + ' MPa√m', 8, 18);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = '11px Inter';
+  ctx.fillText('← crack', 20, cy - 8);
+  ctx.fillText('crack tip →', cx - 66, cy + 18);
+}
+
+window.addEventListener('load', () => {
+  setTimeout(drawField, 100);
+});
+
+window.addEventListener('resize', drawField);
+</script>
+</body>
+</html>
