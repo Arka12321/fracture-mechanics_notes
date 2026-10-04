@@ -15,10 +15,12 @@ Based on Chapter 2 of Lawn's *Fracture of Brittle Solids* (2nd Ed.).
 
 ## Viewing it
 
-This is a single self-contained HTML file (styles and script included) — no build step or dependencies required.
+To view the notes, click the link below:
 
-- **Locally:** download `index.html` and open it in any modern browser.
-- **GitHub Pages:** push it to a repo and enable Pages (Settings → Pages → deploy from branch), pointing to the file. It will be served directly.
+**https://arka12321.github.io/fracture-mechanics_notes/**
+
+No installation is needed. The page opens directly in your browser. To run it locally instead, download `index.html` and open it in a browser (an internet connection is needed for the fonts).
+
 
 ## Notes
 
